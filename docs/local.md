@@ -17,7 +17,7 @@ python -m pip install -r workbench/requirements.lock.txt
 cp .env.example .env
 ```
 
-也可以从 GitHub 下载源码 ZIP，解压后在项目目录执行创建虚拟环境及后续命令。上面是 macOS / Linux 命令；Windows 终端使用 `py -3.12 -m venv .venv` 和 `.venv\Scripts\python.exe` 代替激活后的 `python`，复制 `.env.example` 为 `.env`。macOS 悬浮窗仅支持 Mac；Windows 的本地浏览器麦克风仍需在对应设备上验收。
+也可以从 GitHub 下载源码 ZIP，解压后在项目目录执行创建虚拟环境及后续命令。本指南覆盖 macOS / Linux；当前启动器使用 POSIX 文件权限接口，Windows 独立安装还需完成相应适配和验证。macOS 悬浮窗仅支持 Mac。
 
 ## 2. 填入自己的 Key
 
