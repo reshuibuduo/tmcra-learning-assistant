@@ -157,7 +157,8 @@ final class DesktopApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKScr
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x:0,y:0,width:1440,height:900)
         panel.setFrameOrigin(NSPoint(x:screen.maxX-390,y:screen.maxY-335))
         let root = NSView();root.wantsLayer = true;root.layer?.cornerRadius = 16
-        root.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        // The app uses Aqua; resolve a matching opaque fill independently of the system theme.
+        root.layer?.backgroundColor = NSColor(calibratedRed: 0.98, green: 0.985, blue: 1.0, alpha: 1).cgColor
         root.layer?.borderWidth = 1;root.layer?.borderColor = NSColor(calibratedWhite: 0.84,alpha: 0.7).cgColor
         panel.contentView = root
         let icon = NSImageView(image:NSImage(systemSymbolName:"sparkles",accessibilityDescription:nil)!)

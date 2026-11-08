@@ -33,8 +33,10 @@ for name in paths:
         errors.append(name + ': environment file')
         continue
     data = path.read_bytes()
-    if relative.suffix in {'.wav', '.png'}:
-        allowed = {'workbench/meeting/static/lecture-sample.wav', 'workbench/meeting/static/tmcra-mark.png'}
+    if relative.suffix in {'.wav', '.png', '.jpg'}:
+        allowed = {'workbench/meeting/static/lecture-sample.wav', 'workbench/meeting/static/tmcra-mark.png',
+                   'docs/images/realtime-subtitles.jpg', 'docs/images/proactive-concepts.jpg',
+                   'docs/images/selection-qa.jpg', 'docs/images/floating-window.jpg'}
         if name not in allowed or len(data) > 1_000_000:
             errors.append(name + ': unreviewed binary asset')
         continue
