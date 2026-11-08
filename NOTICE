@@ -1,0 +1,13 @@
+TMCRA Learning Assistant
+Copyright 2026 TMCRA Learning Assistant contributors
+
+This independent learning assistant integrates with the TMCRA project:
+https://github.com/reshuibuduo/tmcra
+
+TMCRA branding assets retain their Apache-2.0 license, included at
+workbench/meeting/static/LICENSE-TMCRA.txt.
+The included short lecture sample is synthesized demonstration speech,
+not a recording of a real meeting or a real participant.
+
+This repository contains no TMCRA model weights. External APIs and separately
+installed models remain subject to their own providers' terms and licenses.

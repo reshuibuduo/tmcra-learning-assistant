@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+const base=new URL('../../workbench/meeting/',import.meta.url);
+const html=fs.readFileSync(new URL('dashboard.html',base),'utf8');
+const ui=fs.readFileSync(new URL('static/learning-ui.mjs',base),'utf8');
+const main=fs.readFileSync(new URL('static/workbench.js',base),'utf8');
+test('learning import consent is unchecked by default',()=>{const tag=html.match(/<input[^>]*id="learningConsent"[^>]*>/)[0];assert.ok(!tag.includes('checked'));assert.ok(html.includes('确认写入个人学习记忆'))});
+test('importer has explicit file and current transcript entries',()=>{for(const id of ['learningNav','learningFromProfile','learningFromMemory','learningFile','learningTranscriptButton','learningState','learningSourceDialog'])assert.ok(html.includes(`id="${id}"`))});
+test('every importer binding resolves to a static element',()=>{for(const [,id] of ui.matchAll(/\$\('([\w-]+)'\)/g))assert.ok(html.includes(`id="${id}"`),id)});
+test('preview and confirmed commit are separate requests',()=>{assert.ok(ui.includes("post('/v1/learning/preview'"));assert.ok(ui.includes("if(busy||!draft||!$('learningConsent').checked)return"));assert.ok(ui.includes('confirmed:true'));assert.ok(ui.includes("$('learningConsent').checked=false"))});
+test('untrusted imported content and recalled cards are escaped',()=>{assert.ok(ui.includes('esc(c.messages.map'));assert.ok(ui.includes('esc(card.body)'));assert.ok(ui.includes('esc(c.quote)'));assert.ok(ui.includes("$('learningSourceText').textContent="))});
+test('main UI renders actual coach result and marks explicit import writes',()=>{assert.ok(main.includes('learningUI.renderReminder(v.coach)'));assert.ok(main.includes('仅手动导入学习资料'));assert.ok(main.includes('没有自动写入长期记忆'))});

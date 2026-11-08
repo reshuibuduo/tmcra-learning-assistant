@@ -1,0 +1,41 @@
+<!doctype html><meta charset="utf-8"><title>音频断线恢复验收 · 不使用麦克风</title>
+<style>body{font:16px/1.8 system-ui;background:#f5f6fb;color:#20263d;max-width:850px;margin:50px auto;padding:24px}button{padding:12px 20px;margin:8px;background:#484dcc;color:white;border:0;border-radius:8px}pre{white-space:pre-wrap;background:white;padding:20px;border-radius:12px}.note{color:#616980}</style>
+<h1>音频断线恢复验收</h1><p class="note">独立测试库 · 已有示例音频 · 不访问麦克风 · 不写入个人记忆</p>
+<button id="start" disabled>开始验收：模拟确认丢失与断线</button><button id="resume" hidden>刷新后恢复缓存并完成验收</button>
+<pre id="result" data-phase="loading">正在连接测试服务…</pre>
+<script type="module">
+import {AudioOutbox} from './audio-outbox.mjs';import {ReliableUpload} from './reliable-upload.mjs';import {floatToPCM} from './audio-utils.mjs';
+const $=id=>document.getElementById(id),store=new AudioOutbox('tmcra-recovery-lab-v1');let token=sessionStorage.getItem('recoveryLabToken')||'',record=JSON.parse(localStorage.getItem('recoveryLabRecord')||'null');
+const show=(phase,text)=>{$('result').dataset.phase=phase;$('result').textContent=text;};
+async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:r.status);return d;}
+async function connect(loseAck=false){const {ticket}=await api(`/v1/sessions/${record.sid}/audio-ticket`,{source:'microphone'});const url=new URL(`/v1/sessions/${record.sid}/audio/microphone`,location.href);url.protocol='ws:';const ws=new WebSocket(url,['tmcra.audio.v2','ticket.'+ticket]);
+ if(loseAck)ws.addEventListener('message',e=>{if(JSON.parse(e.data).type==='ack'&&!record.ackLost){record.ackLost=true;localStorage.setItem('recoveryLabRecord',JSON.stringify(record));e.stopImmediatePropagation();ws.close();}});return ws;}
+async function fixture(){const wav=await (await fetch('/assets/lecture-sample.wav')).arrayBuffer(),v=new DataView(wav);let rate=0,pcm;
+ for(let i=12;i+8<=wav.byteLength;){const name=String.fromCharCode(...new Uint8Array(wav,i,4)),n=v.getUint32(i+4,true);if(name==='fmt '){if(v.getUint16(i+8,true)!==1||v.getUint16(i+10,true)!==1||v.getUint16(i+22,true)!==16)throw Error('需要 PCM16 单声道示例');rate=v.getUint32(i+12,true);}if(name==='data')pcm=new Int16Array(wav.slice(i+8,i+8+n));i+=8+n+(n%2);}
+ const floats=Float32Array.from(pcm,x=>x/32768),context=new OfflineAudioContext(1,Math.ceil(pcm.length*24000/rate),24000),buffer=context.createBuffer(1,pcm.length,rate);buffer.copyToChannel(floats,0);const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);source.start();const base=new Uint8Array(floatToPCM((await context.startRendering()).getChannelData(0))),out=new Uint8Array(base.length*3+48000);
+ for(let n=0;n<3;n++)out.set(base,n*(base.length+24000));return out;
+}
+$('start').onclick=async()=>{try{
+ $('start').disabled=true;const data=await fixture(),digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',data)),x=>x.toString(16).padStart(2,'0')).join('');
+ const view=await api('/v1/sessions',{title:'[验收] 断线补传 · 示例音频 · 无麦克风',mode:'recording_replay',seconds:120,assistant_enabled:false,translation:{enabled:false}});
+ record={sid:view.session.id,bytes:data.length,sha256:digest,ackLost:false,local_persisted:true};localStorage.setItem('recoveryLabRecord',JSON.stringify(record));await store.open(record.sid,0);
+ for(let i=0;i<data.length;i+=9600)await store.enqueue(record.sid,data.slice(i,i+9600).buffer);
+ let paused=false;const u=new ReliableUpload({id:record.sid,store,connect:()=>connect(true),onState:s=>{
+  show('uploading',JSON.stringify({...record,transport:s},null,2));
+  if(record.ackLost&&s.ackedBytes>=48000&&!paused){paused=true;u.dispose();show('paused','已验证确认丢失后的重连。现在刷新此测试页，再点「恢复缓存」。\n'+JSON.stringify({...record,transport:s},null,2));$('resume').hidden=false;}
+ }}).start();u.task.catch(e=>{if(!paused)show('error',e.message);});
+ }catch(e){show('error',e.stack);}};
+$('resume').onclick=async()=>{try{
+ $('resume').disabled=true;const before=await store.meta(record.sid);if(before.next!==record.bytes||before.next<=before.acked)throw Error('待恢复缓存不符合预期');
+ record.reload_recovered=true;const u=new ReliableUpload({id:record.sid,store,connect:()=>connect(),onState:s=>show('recovering',JSON.stringify({...record,transport:s},null,2))}).start();await u.finish();await api(`/v1/sessions/${record.sid}/finish`,{});
+ for(let n=0;n<120;n++){const d=await api(`/v1/sessions/${record.sid}`);if(!['recording','finishing'].includes(d.session.status)){
+  const m=await store.meta(record.sid);record={...record,status:d.session.status,acked:m.acked,pending:m.next-m.acked,transcript_count:d.transcripts.length,transcripts:d.transcripts.map(x=>x.text),asr:d.asr};
+  if(d.session.status!=='completed'||m.acked!==record.bytes||!d.transcripts.length)throw Error(JSON.stringify(record));show('complete',JSON.stringify(record,null,2));return;}
+  await new Promise(r=>setTimeout(r,500));}
+ throw Error('语音识别验收超时，测试音频仍保留。');
+ }catch(e){show('error',e.stack);}};
+const code=new URLSearchParams(location.hash.slice(1)).get('login');if(code){history.replaceState(null,'',location.pathname);const d=await api('/v1/browser-login/exchange',{code});token=d.access_token;sessionStorage.setItem('recoveryLabToken',token);}
+await api('/v1/sessions');$('start').disabled=false;
+if(record&&(await store.meta(record.sid))?.next>(await store.meta(record.sid))?.acked){$('resume').hidden=false;show('ready_resume','已从浏览器磁盘缓存恢复，未开启麦克风。\n'+JSON.stringify({...record,cache:await store.meta(record.sid)},null,2));}
+else show('ready','准备就绪。验收仅发送示例音频。');
+</script>

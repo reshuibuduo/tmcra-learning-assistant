@@ -1,0 +1,30 @@
+name: tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  backend-and-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r workbench/requirements.lock.txt
+      - run: python scripts/test_backend.py
+      - run: node --test tests/*.test.mjs desktop/Tests/*.test.mjs
+      - run: python scripts/check_release.py
+      - run: python scripts/smoke_test.py
+  desktop-model:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          xcrun swiftc -swift-version 5 desktop/Sources/PanelState.swift desktop/Tests/ModelTests.swift -o /tmp/tmcra-model-tests
+          /tmp/tmcra-model-tests
+      - run: bash desktop/build.sh

@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {renderRows,summary} from '../../workbench/meeting/static/parallel-ui.mjs';
+const view=()=>({transcripts:[{id:'a',text:'first',speaker:'S1',start_ms:1000},{id:'b',text:'second',speaker:'S2',start_ms:2000}],translation:{options:{enabled:true,target_language:'zh-CN',mode:'full'},items:[{utterance_id:'b',source_text:'second',speaker:'S2',mode:'full',target_language:'zh-CN',status:'translated',text:'第二句'},{utterance_id:'a',source_text:'first',speaker:'S1',mode:'full',target_language:'zh-CN',status:'translated',text:'第一句'}],active_requests:3,pending:5,errors:1}});
+test('source order wins over completion order',()=>{const h=renderRows(view());assert(h.indexOf('第一句')<h.indexOf('第二句'));});
+test('all user text escaped',()=>{const v=view();v.transcripts[0].text='<img onerror=1>';v.transcripts[0].speaker='<script>';const h=renderRows(v);assert(h.includes('&lt;img'));assert(!h.includes('<script>'));});
+test('summary distinguishes active pending done errors',()=>assert.deepEqual(summary(view()),{active:3,pending:5,done:2,errors:1}));
+test('display is bounded to latest 120 original rows',()=>{const v=view();v.transcripts=Array.from({length:200},(_,i)=>({id:String(i),text:'row '+i}));const h=renderRows(v);assert.equal((h.match(/class="utterance"/g)||[]).length,120);assert(!h.includes('>row 79<'));assert(h.includes('row 199'));});
+test('paused hides translated content without removing source',()=>{const v=view();v.translation.options.enabled=false;const h=renderRows(v);assert(h.includes('first'));assert(!h.includes('第一句'));});
+test('vocabulary mode does not show whole sentence',()=>{const v=view();v.translation.options.mode='vocabulary';const h=renderRows(v);assert(!h.includes('第一句'));assert(h.includes('first'));});
+test('panel never captures or ends recording',()=>{const source=fs.readFileSync(new URL('../../workbench/meeting/static/parallel-ui.mjs',import.meta.url),'utf8');for(const x of ['getUserMedia','AudioContext','MediaRecorder','/stop','/v1/sessions'])assert(!source.includes(x));});
+test('follow toggle can truly disable auto scroll',()=>{const source=fs.readFileSync(new URL('../../workbench/meeting/static/parallel-ui.mjs',import.meta.url),'utf8');assert(source.includes("$('follow').checked?$('rows').scrollHeight:top"));});

@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+import {requestJSON,connectionLabel,captureLabel} from '../../workbench/meeting/static/transport-state.mjs';
+const source=fs.readFileSync(new URL('../../workbench/meeting/static/workbench.js',import.meta.url),'utf8');
+const apiSource=source.slice(source.indexOf('async function api('),source.indexOf('\nfunction post('));
+function response(data={},status=200){return {ok:status<400,status,json:async()=>data};}
+test('disconnect is distinct from initial unauthenticated state',()=>{assert.equal(connectionLabel(true),'服务已连接');assert.equal(connectionLabel(false),'尚未连接');assert.equal(connectionLabel(false,'network'),'连接中断');});
+test('stopped client never displays stale server recording state',()=>{assert.equal(captureLabel('recording',true),'本机采集已停止');assert.equal(captureLabel('finishing',true),'本机采集已停止');assert.equal(captureLabel('completed',true),'已结束');assert.equal(captureLabel('recording',false),'采集中');});
+test('successful request preserves JSON response',async()=>{const x=await requestJSON(async()=>response({ok:true}),'/test');assert.deepEqual(x.data,{ok:true});});
+test('network error is translated without echoing sensitive transport details',async()=>{await assert.rejects(requestJSON(async()=>{throw Error('PRIVATE_TRANSPORT_DETAIL');},'/test'),e=>e.message.includes('连接已中断')&&!e.message.includes('PRIVATE'));});
+test('invalid JSON is not treated as healthy data',async()=>{await assert.rejects(requestJSON(async()=>({json:async()=>{throw new SyntaxError();}}),'/test'),/没有返回有效结果/);});
+test('POST is not automatically retried',async()=>{let count=0;await assert.rejects(requestJSON(async(u,o)=>{count++;assert.equal(o.body,'payload');throw Error();},'/test',{method:'POST',body:'payload'}));assert.equal(count,1);});
+test('deadline rejects even when fetch ignores AbortSignal',async()=>{await assert.rejects(requestJSON(()=>new Promise(()=>{}),'/test',{}, {timeoutMs:5}),/超时/);});
+test('deadline covers a stalled JSON response body',async()=>{await assert.rejects(requestJSON(async()=>({json:()=>new Promise(()=>{})}),'/test',{}, {timeoutMs:5}),/超时/);});
+test('deadline aborts the actual request',async()=>{let signal;await assert.rejects(requestJSON(async(u,o)=>{signal=o.signal;return new Promise(()=>{});},'/test',{}, {timeoutMs:5}));assert.equal(signal.aborted,true);});
+function apiHarness(fetch){const states=[],removed=[];const ctx={fetch,requestJSON,S:{token:'TEST'},connection:(ready,problem)=>states.push({ready,problem}),sessionStorage:{removeItem:k=>removed.push(k)},Error};vm.createContext(ctx);vm.runInContext(apiSource,ctx);return {ctx,states,removed};}
+test('real API wrapper clears connected state on network failure',async()=>{const h=apiHarness(async()=>{throw Error('Failed to fetch');});await assert.rejects(h.ctx.api('/v1/sessions'));assert.equal(h.states.at(-1).ready,false);assert.equal(h.ctx.S.token,'TEST');});
+test('real API wrapper restores connected state after successful response',async()=>{const h=apiHarness(async()=>response({sessions:[]}));await h.ctx.api('/v1/sessions');assert.equal(h.states.at(-1).ready,true);});
+test('401 still clears browser authentication',async()=>{const h=apiHarness(async()=>response({detail:'unauthorized'},401));await assert.rejects(h.ctx.api('/v1/sessions'),/连接已过期/);assert.equal(h.ctx.S.token,'');assert.equal(h.states.at(-1).ready,false);assert.equal(h.removed.length,1);});
+test('health heartbeat exists and capture cannot start while disconnected',()=>{assert.match(source,/setInterval\(health,5000\)/);assert.match(source,/occupied\|\|!S.connected\|\|!S.health/);});
+test('local stop marker is set before network cleanup awaits',()=>{const s=source.slice(source.indexOf('async function finishCapture('),source.indexOf('async function runAudio('));assert.ok(s.indexOf('S.stoppedSession=cap.id')<s.indexOf('await endSocket'));assert.match(source,/captureLabel\(meta.status,S.stoppedSession===meta.id\)/);});

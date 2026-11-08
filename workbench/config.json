@@ -1,0 +1,22 @@
+{
+  "asr_provider": "volc_speech",
+  "asr_endpoint": "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async",
+  "asr_resource": "volc.seedasr.sauc.duration",
+  "diarization": true,
+  "reasoning_model": "gpt-6.1-sol",
+  "planner_model": "gpt-6-luna",
+  "reasoning_effort": "low",
+  "reasoning_timeout_seconds": 30,
+  "max_output_tokens": 4000,
+  "tmcra_write": false,
+  "capture_enabled": true,
+  "reminder_cooldown_seconds": 90,
+  "max_card_chars": 180,
+  "max_queries": 2,
+  "learner_memory_scopes": [],
+  "concept_enabled": true,
+  "concept_cooldown_seconds": 45,
+  "concept_deadline_seconds": 12,
+  "translation_model": "gpt-6-luna",
+  "translation_deadline_seconds": 12
+}
