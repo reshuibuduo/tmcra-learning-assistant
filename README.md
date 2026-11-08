@@ -27,24 +27,24 @@
   <tr>
     <td width="50%" valign="top">
       <h3>实时字幕</h3>
-      <a href="docs/images/realtime-subtitles.jpg?raw=true"><img src="docs/images/realtime-subtitles.jpg" alt="实时字幕：英文原文与中文字幕对照" width="100%"></a>
+      <a href="https://raw.githubusercontent.com/reshuibuduo/tmcra-learning-assistant/main/docs/images/realtime-subtitles.jpg"><img src="docs/images/realtime-subtitles.jpg" alt="实时字幕：英文原文与中文字幕对照" width="100%"></a>
       <p>原文、译文、说话人编号与时间位置对照；图中为专注模式下的演示转写回看。</p>
     </td>
     <td width="50%" valign="top">
       <h3>主动解释新概念</h3>
-      <a href="docs/images/proactive-concepts.jpg?raw=true"><img src="docs/images/proactive-concepts.jpg" alt="主动解释新概念：Query、Key 与 Value 的直觉和例子" width="100%"></a>
+      <a href="https://raw.githubusercontent.com/reshuibuduo/tmcra-learning-assistant/main/docs/images/proactive-concepts.jpg"><img src="docs/images/proactive-concepts.jpg" alt="主动解释新概念：Query、Key 与 Value 的直觉和例子" width="100%"></a>
       <p>给出直觉、具体例子及课堂原句；没有历史记忆，也能帮助跟上讲解。</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <h3>划线提问</h3>
-      <a href="docs/images/selection-qa.jpg?raw=true"><img src="docs/images/selection-qa.jpg" alt="划线提问：选中字幕、问题、回答和原句出处" width="100%"></a>
+      <a href="https://raw.githubusercontent.com/reshuibuduo/tmcra-learning-assistant/main/docs/images/selection-qa.jpg"><img src="docs/images/selection-qa.jpg" alt="划线提问：选中字幕、问题、回答和原句出处" width="100%"></a>
       <p>选中原文或译文后提问，保留引用出处；支持流式显示，图中为已完成的演示回答。</p>
     </td>
     <td width="50%" valign="top">
       <h3>macOS 悬浮窗</h3>
-      <a href="docs/images/floating-window.jpg?raw=true"><img src="docs/images/floating-window.jpg" alt="macOS 悬浮窗：采集控制、提示开关和概念解释" width="100%"></a>
+      <a href="https://raw.githubusercontent.com/reshuibuduo/tmcra-learning-assistant/main/docs/images/floating-window.jpg"><img src="docs/images/floating-window.jpg" alt="macOS 悬浮窗：采集控制、提示开关和概念解释" width="100%"></a>
       <p>主窗口收起后仍可控制采集与提示；图中为内置离线演示，不使用麦克风或模型。</p>
     </td>
   </tr>

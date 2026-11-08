@@ -71,7 +71,8 @@ class GalleryTests(unittest.TestCase):
         self.assertEqual({Path(i['src']).name for i in images}, IMAGES)
         for image in images:
             self.assertTrue((ROOT / image['src']).is_file(), image['src'])
-            self.assertEqual(image['href'], image['src'] + '?raw=true')
+            self.assertEqual(image['href'], 'https://raw.githubusercontent.com/reshuibuduo/'
+                             'tmcra-learning-assistant/main/' + image['src'])
             self.assertTrue(image.get('alt', '').strip())
 
     def test_gallery_is_two_rows_by_two_columns(self):
